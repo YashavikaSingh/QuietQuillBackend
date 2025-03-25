@@ -13,12 +13,8 @@ if not GOOGLE_API_KEY:
     raise ValueError("The GOOGLE_API_KEY environment variable is not set.")
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Use the correct Gemini model initialization
-try:
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-except Exception as e:
-    print(f"Failed to load Gemini model: {str(e)}")
-    exit(1)
+# Load the Gemini model outside of routes
+gemini_model = genai.GenerativeModel('gemini-pro')
 
 @app.route('/analyze_sentiment/', methods=['POST'])
 def analyze_sentiment():
@@ -47,7 +43,7 @@ def generate_suggestion():
     data = request.get_json()
     diary_entry = data.get('text', '')
 
-    # Properly format the input prompt for Gemini
+    # Craft a prompt for Gemini to act as a therapist
     prompt = f"""
     You are a compassionate and understanding therapist. A client has shared the following diary entry:
 
@@ -56,7 +52,7 @@ def generate_suggestion():
     Respond to this diary entry as a therapist would. Offer insights, support, and perhaps some gentle guidance or questions to help them reflect further. Keep your response empathetic and encouraging.
     """
 
-    # Use the generate_content method correctly
+    # Generate text using Gemini with the crafted prompt
     try:
         response = gemini_model.generate_content(prompt)
         therapist_response = response.text

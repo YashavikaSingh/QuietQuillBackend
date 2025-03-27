@@ -3,6 +3,7 @@ from textblob import TextBlob
 from flask_cors import CORS
 import google.generativeai as genai
 import os
+import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -64,6 +65,58 @@ def generate_suggestion():
         return jsonify({"error": f"Error during text generation: {str(e)}"}), 500
 
     return jsonify({'suggestion': therapist_response})
+
+@app.route('/monthly_summary', methods=['POST'])
+def generate_monthly_summary():
+    data = request.get_json()
+    month = data.get('month', '')
+    diary_entries = data.get('entries', [])
+
+    # Combine all entries into a single context
+    combined_entries = "\n\n".join(diary_entries)
+
+    # Prompt for generating a comprehensive monthly summary
+    prompt = f"""
+    You are an insightful life coach analyzing a person's diary entries for {month}. 
+    Provide a structured summary covering:
+
+    - **Relationships (Friends, Partner, Family)**:
+    - Social interactions and dynamics  
+    - Significant moments or challenges  
+
+    - **Work/Study Progress**:
+    - Key achievements, challenges, or learnings  
+
+    - **Exercise and Well-being**:
+    - Fitness activities and self-care patterns  
+
+    - **Emotional Landscape**:
+    - Recurring emotional themes  
+    - Sources of stress, anxiety, or joy  
+    - Areas for emotional growth  
+
+    - **Writing and Self-Expression**:
+    - Evolution of writing style  
+    - Improvements in articulation and reflection  
+
+    - **Notable Milestones and Experiences**:
+    - Chronological list of key events  
+    - Personal growth highlights  
+
+    **Diary Entries Context:**  
+    {combined_entries}  
+
+    Please provide a clear, empathetic, and constructive analysis.
+    """
+
+    # Generate summary using Gemini
+    try:
+        response = gemini_model.generate_content(prompt)
+        monthly_summary = response.text
+    except Exception as e:
+        return jsonify({"error": f"Error during monthly summary generation: {str(e)}"}), 500
+
+    return jsonify({'summary': monthly_summary})
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5001)
